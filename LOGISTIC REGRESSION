@@ -1,0 +1,77 @@
+# R-PROGRAMMING
+
+df<-read.csv("~/VoterPref.csv")
+
+df
+
+library(caTools)
+set.seed(71923)
+#split<-sample.split(df,SplitRatio = 0.7)
+#train<-subset(df,split=="TRUE")
+#test<-subset(df,split=="FALSE")
+split<-sample(nrow(df),0.7*nrow(df))
+train<-df[split,]
+test<-df[-split,]
+summary(train)
+summary(test)
+
+library(plotly)
+plot_ly(df, y = ~INCOME, color = ~PREFERENCE, type = "box")
+plot_ly(df, y = ~AGE, color = ~PREFERENCE, type = "box")
+prop.table(table(train$PREFERENCE))
+x<-table(train$GENDER,train$PREFERENCE)
+x
+library(plyr)
+train$PREFERENCE<-revalue(train$PREFERENCE,c("Against"="1","For"="0"))
+train$PREFERENCE<-as.numeric(as.character(train$PREFERENCE))
+train$PREFERENCE
+
+fit1<-lm(PREFERENCE~.,data=train)
+summary(fit1)
+trainpred<-predict(fit1)
+trainpred
+
+testpred<-predict(fit1,newdata = test)
+class(testpred)
+summary(testpred)
+#for training set
+install.packages("Metrics")
+library("Metrics")
+rmse(train$PREFERENCE,trainpred)
+mae(train$PREFERENCE,trainpred)
+mean(train$PREFERENCE-trainpred)
+#test$PREFERENCE
+test$PREFERENCE<-revalue(test$PREFERENCE,c("Against"="1","For"="0"))
+test$PREFERENCE<-as.numeric(as.character(test$PREFERENCE))
+#rm<-function(fit1,testpred){sqrt(mean(fit1-testpred)^2)}
+#rm(test$PREFERENCE-testpred)
+rmse(test$PREFERENCE,testpred)
+mae(test$PREFERENCE,testpred)
+mean(test$PREFERENCE-testpred)
+
+traincut<-ifelse(trainpred>0.5,1,0)
+prop.table(table(traincut))
+testcut<-ifelse(testpred>0.5,1,0)
+prop.table(table(testcut))
+table(testcut/nrow(test))
+prop.table(table(train$PREFERENCE,traincut))
+prop.table(table(test$PREFERENCE,testcut))
+#q4
+fit2<-glm(PREFERENCE~.,data=train,family="binomial")
+summary(fit2)
+tpred<-predict(fit2,train,type="response")
+tpred
+
+tcut<-ifelse(tpred>0.5,1,0)
+tcut
+table(tcut/nrow(test))
+ttpred<-predict(fit2,test,type="response")
+ttpred
+table(ttcut/nrow(test))
+ttcut<-ifelse(ttpred>0.5,1,0)
+ttcut
+prop.table(table(train$PREFERENCE,tcut))
+prop.table(table(test$PREFERENCE,ttcut))
+newdata<-data.frame(AGE=36,INCOME=70.000,GENDER="F",PREFERENCE=1)
+final<-predict(fit2,newdata,type="response")
+final
